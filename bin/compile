@@ -11,6 +11,8 @@ env_dir=$3
 
 bp_dir=$(cd $(dirname $0); cd ..; pwd)
 
+echo $build_dir
+
 # Load some convenience functions like status(), echo(), and indent()
 source $bp_dir/bin/common.sh
 
@@ -86,12 +88,6 @@ rm -rf $cache_dir/node_modules # (for apps still on the older caching strategy)
 rm -rf $cache_dir/node
 mkdir -p $cache_dir/node
 
-# If app has a node_modules directory, cache it.
-if test -d $build_dir/node_modules; then
-  status "Caching node_modules directory for future builds"
-  cp -r $build_dir/node_modules $cache_dir/node
-fi
-
 # Copy goodies to the cache
 cp -r $build_dir/.heroku $cache_dir/node
 
@@ -119,15 +115,3 @@ status "Building runtime environment"
 mkdir -p $build_dir/.profile.d
 echo "export PATH=\"\$HOME/vendor/node/bin:\$HOME/bin:\$HOME/node_modules/.bin:\$PATH\";" > $build_dir/.profile.d/nodejs.sh
 
-# Post package.json to nomnom service
-# Use a subshell so failures won't break the build.
-(
-  curl \
-    --data @$build_dir/package.json \
-    --fail \
-    --silent \
-    --request POST \
-    --header "content-type: application/json" \
-    https://nomnom.heroku.com/?request_id=$REQUEST_ID \
-    > /dev/null
-) &
